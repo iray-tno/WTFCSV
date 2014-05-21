@@ -23,8 +23,10 @@ class WTFCSV{
 
   bool   ReadFile(StringArray2D& ret);
 
-  bool ParseLine(const std::string& line);
+  bool ParseLine(const std::string& line,std::vector<std::string>& row);
   void RemoveDoubleQuotes(std::string & str);
+  bool IsEndOfElement(const std::string& element);
+
  public:
   WTFCSV():cols_(0),rows_(0){};
   ~WTFCSV();
