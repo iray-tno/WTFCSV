@@ -1,117 +1,79 @@
 #include "WTFCSV.h"
 
-const std::string WTFCSV::constComma = ",";
-
-WTFCSV::WTFCSV(){
-  Initialize();
-};
+const char WTFCSV::kComma = ',';
+const char WTFCSV::kDoublequote = '\"';
 
 WTFCSV::~WTFCSV(){
-  Initialize();
 };
 
-void WTFCSV::Initialize(){
-  row_size = 0L;
-  col_size = 0L;
-  buffer.clear();
-}
+bool WTFCSV::Input(const std::string& file_name, StringArray2D& ret){
+  fs_.open(file_name.c_str(), std::ios::in);
+  
+  ReadFile(ret);
 
-bool WTFCSV::InputBuffer(const std::string file_name){
-  Initialize();
-  fs.open(file_name.c_str(), std::ios::in);
-
-  if(fs.fail() == true) return false;
-  if(ValidCSV() == false) return false;
-
-  buffer.resize(col_size);
-  for(unsigned int i = 0; i < col_size; i++){
-    buffer[i].resize(row_size);
-  }
-
-  if(!ReadData())  return false;
-
-  fs.close();
+  fs_.close();
   return true;
 }
 
-bool WTFCSV::OutputBuffer(const std::string file_name){
+bool WTFCSV::ReadFile(StringArray2D& ret){
 
-  fs.open(file_name.c_str(), std::ios::out | std::ios::trunc);
+  std::string line;
 
-  if(fs.fail() == true)    return false;
-  if(NoBuffer() == true)   return false;
-  if(ValidBuffer() == false) return false;
+  //getline(fs, line)　ファイルで1行読み込む
+  //getline(iss, token, constComma.c_str()[0])  一行の中でカンマまで読み込む
 
-  for(unsigned int i = 0; i < col_size; i++){
-    std::ostringstream osstream;
-    for(unsigned int j = 0; j < row_size; j++){
-      if(j != 0) osstream << constComma;
-      osstream << buffer[i][j];
-    }
-    fs << osstream.str() << std::endl;
+  while(getline(fs_, line)){//1行読み込む 
+    ParseLine(line);
   }
-
-  fs.close();
   return true;
 }
 
-bool WTFCSV::ReadData(){
-  std::string line, token;
-  unsigned int counted_col = 0;
-  unsigned int counted_row = 0;
+bool WTFCSV::ParseLine(const std::string& line){
+  std::string::const_iterator cit = line.begin();
 
-  while(getline(fs, line)){
-    std::istringstream isstream(line);
-    if(std::count(line.begin(), line.end(), constComma.c_str()[0]) != 0){
-      counted_row = 0;
-      counted_col++;
-      while(getline(isstream, token, constComma.c_str()[0])){
-        counted_row++;
-        buffer[counted_col-1][counted_row-1] = token;
-      }
+  
+
+
+  std::string token;
+  std::istringstream iss(line);
+  unsigned long current_rows = 0;
+  cols_++;
+  while(getline(iss, token, kComma)){//
+    std::string element("");
+    element.append(token);
+    if(token[0] == kDoublequote){
+      do{
+        getline(iss, token, kComma);
+        element.append(kComma+token);
+      }while(IsEndOfElement(element));
+      RemoveDoubleQuotes(element);
     }
+    std::cout << element << std::endl;
+    current_rows++;
   }
+  return true;
+}
 
-  if(row_size == counted_row && col_size == counted_col){
-    return true;
+inline bool SplitIntoTokens(const std::string& line, std::vector<string>& tokens ){
+  std::string::const_iterator cit = line.begin();
+  return boost::spirit::qi::parse(cit, line.end(), boost::spirit::*char_ % ',', tokens) && cit==line.end();
+}
+
+inline void WTFCSV::RemoveDoubleQuotes(std::string& str){
+  std::string::size_type pos = 0;
+  while((pos = str.find(kDoublequote)),(pos != std::string::npos)){
+    str.erase(pos,1);
+  }
+  return ;
+}
+
+inline bool IsEndOfElement(const std::string& token){
+  int token_length = token.length();
+  if(token[token_length] == kDoublequote){
+    if(token_length==1){
+      return true;
+    }else{}
   }else{
     return false;
   }
-}
-
-bool WTFCSV::ValidCSV(){
-  std::string line, token;
-  unsigned int row_size = 0;
-  unsigned int counted_col = 0;
-    unsigned int this_line_row_size = 0;
-
-  while(getline(fs, line)){
-    this_line_row_size = std::count(line.begin(), line.end(), constComma.c_str()[0]) + 1;
-
-      if(this_line_row_size != 0) {
-        counted_col++;
-          if(this_line_row_size != row_size && row_size != 0) return false;
-        row_size = this_line_row_size;
-      }
-
-  }
-
-  this->row_size = row_size;
-  this->col_size = counted_col;
-  fs.clear();
-  fs.seekg(0, std::ios::beg);
-
-  return true;
-}
-
-bool WTFCSV::ValidBuffer(){
-
-  unsigned int row_size_buf = buffer[0].size();
-  for(unsigned int i = 0; i < buffer.size(); i++){
-    if(buffer[i].size() != row_size_buf) return false;
-  }
-
-  this->row_size = buffer[0].size();
-  this->col_size = buffer.size();
-  return true;
 }

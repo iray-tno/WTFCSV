@@ -6,49 +6,32 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
-
+#include <boost/spirit/include/qi.hpp>
 typedef std::vector< std::vector<std::string> > StringArray2D;
 
 class WTFCSV{
  protected:
-  std::fstream   fs;
-  unsigned long  row_size;
-  unsigned long  col_size;
+  
+  std::fstream fs_;
+  unsigned long cols_;
+  unsigned long rows_;
 
-  static const std::string constComma;
+  static const char kComma;
+  static const char kDoublequote;
 
-  std::vector< std::vector<std::string> > buffer;
+  StringArray2D buffer;
 
-  bool         ValidCSV();
-  bool         ValidBuffer();
-  bool         ReadData();
-  bool         NoBuffer(){ return buffer.empty() == true; };
+  bool   ReadFile(StringArray2D& ret);
 
+  bool ParseLine(const std::string& line);
+  void RemoveDoubleQuotes(std::string & str);
  public:
-  WTFCSV();
+  WTFCSV():cols_(0),rows_(0){};
   ~WTFCSV();
 
-  bool  InputBuffer(const std::string file_name);
-  bool  OutputBuffer(const std::string file_name);
+  bool Input(const std::string& file_name, StringArray2D& ret);
+  bool Output(const std::string& file_name, StringArray2D& data);
 
-  bool  InputBuffer(const std::string file_name, StringArray2D& buffer){
-    bool ret;
-    ret = InputBuffer(file_name);
-    buffer = this->buffer;
-    return ret;
-  }
-
-  bool  OutputBuffer(const std::string file_name, const StringArray2D buffer){
-    this->buffer = buffer;
-    return OutputBuffer(file_name);
-  }
-
-  void      Initialize();
-
-  StringArray2D&  GetBufferRef(){ return buffer; };
-  StringArray2D  GetBuffer(){ return buffer; };
-  unsigned long  GetRowSize(){ return row_size; };
-  unsigned long  GetColSize(){ return col_size; };
 };
 
 #endif //_WTFCSV_H__
