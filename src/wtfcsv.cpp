@@ -21,7 +21,15 @@ bool WTFCSV::ReadFile(StringArray2D& ret){
 
   while(getline(fs_, line)){//1行読み込む
     std::vector<std::string> row;
-    ParseLine(line, row);
+    if(ParseLine(line, row)==false){//行の終わりでないとき次の行も合わせてパースを試みる
+      std::cout << "parseline false"<<std::endl;
+      std::string buf_line("");
+      do{
+        buf_line.append(line);
+        if(!getline(fs_, line)){return false;}
+        buf_line.append(line);
+      }while(ParseLine(buf_line, row)==false);
+    }else{}
     ret.push_back(row);
   }
   return true;
@@ -32,19 +40,27 @@ bool WTFCSV::ParseLine(const std::string& line,std::vector<std::string>& row){
   std::string token;
   std::istringstream iss(line);
   unsigned long current_rows = 0;
-  cols_++;
   while(getline(iss, token, kComma)){//
-    std::string element(token);
-    if(token[0] == kDoublequote){
+    std::string element("");
+    element.append(token);
+    //FIXME 最初の文字がﾀﾞﾌﾞｸｵだったときに最後がダブクオ又はダブクオ＋改行で終わってるか調べる
+    //      さらに最後のダブクオを数えて奇数だったら要素の終わりだからやめる
+    if(element[0] == kDoublequote){
+      if(element[element.size()-1] != kDoublequote)
       do{
-        getline(iss, token, kComma);
+        //std::cout << (token[0] == kDoublequote) << std::endl <<(token[token.size()-1] != kDoublequote);
+        if(!getline(iss, token, kComma)){
+          return false;
+        }
         element.append(kComma+token);
       }while(IsEndOfElement(element));
       RemoveDoubleQuotes(element);
     }
+    //FIXME 途中で中断する可能性あるからpushbackは後で
     row.push_back(element);
     current_rows++;
   }
+  cols_++;
   return true;
 }
 /*
