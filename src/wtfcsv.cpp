@@ -2,6 +2,7 @@
 
 const char WTFCSV::kComma = ',';
 const char WTFCSV::kDoublequote = '\"';
+const char WTFCSV::kLineFeed = '\n';
 
 WTFCSV::~WTFCSV(){
 };
@@ -17,75 +18,88 @@ bool WTFCSV::Input(const std::string& file_name, StringArray2D& ret){
 
 bool WTFCSV::ReadFile(StringArray2D& ret){
 
-  std::string line;
-
-  while(getline(fs_, line)){//1行読み込む
-    std::vector<std::string> row;
-    if(ParseLine(line, row)==false){//行の終わりでないとき次の行も合わせてパースを試みる
-      std::cout << "parseline false"<<std::endl;
-      std::string buf_line("");
-      do{
-        buf_line.append(line);
-        if(!getline(fs_, line)){return false;}
-        buf_line.append(line);
-      }while(ParseLine(buf_line, row)==false);
-    }else{}
+  std::vector<std::string> row;
+  while(ParseLine(row)){
+    std::cout << "true";
     ret.push_back(row);
   }
   return true;
 }
 
-bool WTFCSV::ParseLine(const std::string& line,std::vector<std::string>& row){
-  //std::string::const_iterator cit = line.begin();
-  std::string token;
-  std::istringstream iss(line);
-  unsigned long current_rows = 0;
-  while(getline(iss, token, kComma)){//
-    std::string element("");
-    element.append(token);
-    //FIXME 最初の文字がﾀﾞﾌﾞｸｵだったときに最後がダブクオ又はダブクオ＋改行で終わってるか調べる
-    //      さらに最後のダブクオを数えて奇数だったら要素の終わりだからやめる
-    if(element[0] == kDoublequote){
-      if(element[element.size()-1] != kDoublequote)
-      do{
-        //std::cout << (token[0] == kDoublequote) << std::endl <<(token[token.size()-1] != kDoublequote);
-        if(!getline(iss, token, kComma)){
-          return false;
-        }
-        element.append(kComma+token);
-      }while(IsEndOfElement(element));
-      RemoveDoubleQuotes(element);
-    }
-    //FIXME 途中で中断する可能性あるからpushbackは後で
-    row.push_back(element);
-    current_rows++;
+bool WTFCSV::ParseLine(std::vector<std::string>& row){
+  row.clear();
+  std::string line;
+  if(!GetLine(line)){
+    return false;
   }
-  cols_++;
+  
+  SplitIntoElements(line, row);
   return true;
 }
-/*
-inline bool SplitIntoTokens(const std::string& line, std::vector<string>& tokens ){
-  std::string::const_iterator cit = line.begin();
-  return boost::spirit::qi::parse(cit, line.end(), boost::spirit::*char_ % ',', tokens) && cit==line.end();
-}*/
 
-inline void WTFCSV::RemoveDoubleQuotes(std::string& str){//ダブルクオートを
-  std::string::size_type pos = 0;
-  while((pos = str.find(kDoublequote)),(pos != std::string::npos)){
-    str.erase(pos,1);
+inline bool WTFCSV::SplitIntoElements(const std::string& line,
+                                      std::vector<std::string>& elements){
+  elements.clear();
+  std::string element, token;
+  int sum_of_dqs = 0;
+  std::istringstream iss(line);
+  
+  while(getline(iss, element, kComma)){
+    if(element[0] == kDoublequote){
+
+      sum_of_dqs = CountDoublequotes(element);
+
+      while( (sum_of_dqs%2) == 1){
+        getline(iss, token, kComma);
+        sum_of_dqs += CountDoublequotes(token);
+        element.append(kComma+token);
+      }
+
+      UnescapeElement(element);
+    }
+
+    elements.push_back(element);
+  }
+  return true;
+}
+
+inline bool WTFCSV::GetLine(std::string& line){
+  /*
+    行に含まれるダブルクオートが奇数の場合
+    次の行も読み込んで連結する
+  */
+  line.clear();
+  std::string buf;
+
+  if(!getline(fs_,buf)){ return false; }
+  int sum_of_dqs = CountDoublequotes(buf);
+  line.append(buf);
+  
+  while( (sum_of_dqs%2) == 1){ 
+    if(!getline(fs_,buf)){ return false; }
+    sum_of_dqs += CountDoublequotes(buf);
+    line.append(kLineFeed+buf);
+  }
+  return true;
+}
+
+inline int WTFCSV::CountDoublequotes(const std::string& str){
+  return std::count(str.begin(), str.end(), kDoublequote);
+}
+
+inline void WTFCSV::UnescapeElement(std::string& element){
+  int begin = element.find_first_of(kDoublequote);
+  int end = element.find_last_of(kDoublequote);
+  if(begin == std::string::npos||end == std::string::npos){
+    return ;
+  }
+  element = element.substr(begin+1, end-(begin+1));
+  
+  int pos = element.find(kDoublequote,0);
+  while(pos != std::string::npos){
+    element.erase(pos,1);
+    pos = element.find(kDoublequote,pos+1);
   }
   return ;
 }
 
-inline bool WTFCSV::IsEndOfElement(const std::string& element){
-  int element_length = element.length();
-  if(element[element_length] == kDoublequote){
-    if((std::count(element.begin(), element.end(), kDoublequote)%2)==0){
-      return true;
-    }else{
-      return false;
-    }
-  }else{
-    return false;
-  }
-}

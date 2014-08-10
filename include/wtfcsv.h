@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
-#include <boost/spirit/include/qi.hpp>
+
 typedef std::vector< std::vector<std::string> > StringArray2D;
 
 class WTFCSV{
@@ -18,14 +18,20 @@ class WTFCSV{
 
   static const char kComma;
   static const char kDoublequote;
+  static const char kLineFeed;
 
   StringArray2D buffer;
 
-  bool   ReadFile(StringArray2D& ret);
+  bool  ReadFile(StringArray2D& ret);
 
-  bool ParseLine(const std::string& line,std::vector<std::string>& row);
-  void RemoveDoubleQuotes(std::string & str);
-  bool IsEndOfElement(const std::string& element);
+  bool  ParseLine(std::vector<std::string>& row);
+  void  RemoveDoubleQuotes(std::string & str);
+  bool  IsEndOfElement(const std::string& element);
+  bool  SplitIntoElements(const std::string& line, 
+                          std::vector<std::string>& elements);
+  bool  GetLine(std::string& line);
+  int   CountDoublequotes(const std::string& str);
+  void  UnescapeElement(std::string& element);
 
  public:
   WTFCSV():cols_(0),rows_(0){};
