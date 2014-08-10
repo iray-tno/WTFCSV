@@ -116,17 +116,17 @@ bool WTFCSV::WriteFile(const StringArray2D& data){
   int rows = CountRows(data);
 
   int data_cols = data.size();
-  for(int i = 0; i < data_cols; i++){
+  for(int i = 0; i < data_cols; ++i){
     int data_i_rows = data[i].size();
     osstream << data[i][0];
     //1から
-    for(int j = 1; j < data_i_rows; j++){
+    for(int j = 1; j < data_i_rows; ++j){
       std::string element(data[i][j]);
       EscapeElement(element);
       osstream << kComma;
       osstream << element;
     }
-    for(int j = 0; j < (rows-data_i_rows);j++){
+    for(int j = 0; j < (rows-data_i_rows);++j){
       osstream << kComma;
     }
     osstream << std::endl;
@@ -137,7 +137,7 @@ bool WTFCSV::WriteFile(const StringArray2D& data){
 
 inline int WTFCSV::CountRows(const StringArray2D& data){
   int rows = 0, buf_rows = 0, cols = data.size();
-  for(int i = 0; i < cols; i++){
+  for(int i = 0; i < cols; ++i){
     buf_rows = data[i].size();
     if(rows < buf_rows){
       rows = buf_rows;
