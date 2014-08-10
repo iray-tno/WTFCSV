@@ -20,7 +20,6 @@ bool WTFCSV::ReadFile(StringArray2D& ret){
 
   std::vector<std::string> row;
   while(ParseLine(row)){
-    std::cout << "true";
     ret.push_back(row);
   }
   return true;
@@ -88,14 +87,14 @@ inline int WTFCSV::CountDoublequotes(const std::string& str){
 }
 
 inline void WTFCSV::UnescapeElement(std::string& element){
-  int begin = element.find_first_of(kDoublequote);
-  int end = element.find_last_of(kDoublequote);
-  if(begin == std::string::npos||end == std::string::npos){
+  size_t first = element.find_first_of(kDoublequote);
+  size_t last = element.find_last_of(kDoublequote);
+  if(first == std::string::npos||last == std::string::npos){
     return ;
   }
-  element = element.substr(begin+1, end-(begin+1));
+  element = element.substr(first+1, last-(first+1));
   
-  int pos = element.find(kDoublequote,0);
+  size_t pos = element.find(kDoublequote,0);
   while(pos != std::string::npos){
     element.erase(pos,1);
     pos = element.find(kDoublequote,pos+1);

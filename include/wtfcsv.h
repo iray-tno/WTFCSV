@@ -25,11 +25,9 @@ class WTFCSV{
   bool  ReadFile(StringArray2D& ret);
 
   bool  ParseLine(std::vector<std::string>& row);
-  void  RemoveDoubleQuotes(std::string & str);
-  bool  IsEndOfElement(const std::string& element);
+  bool  GetLine(std::string& line);
   bool  SplitIntoElements(const std::string& line, 
                           std::vector<std::string>& elements);
-  bool  GetLine(std::string& line);
   int   CountDoublequotes(const std::string& str);
   void  UnescapeElement(std::string& element);
 
